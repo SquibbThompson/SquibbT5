@@ -1,1 +1,1 @@
-# SquibbT5
+ SquibbT5 Repository for scientific research
