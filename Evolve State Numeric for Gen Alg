@@ -1,0 +1,68 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def create_population_matrix(n_generations, n_individuals, std=0.5, threshold=5, binary_range=1):
+    # define the fitness function
+    def f(x):
+        return np.sin(x)
+
+    # define the dispersion function
+    def dispersion(x, std):
+        return np.exp(-0.5 * ((x - threshold) / std) ** 2)
+
+    # initialize the population with random values
+    population = np.random.uniform(1, 10, size=n_individuals)
+
+    # create an empty matrix to store the population values
+    population_matrix = np.zeros((n_generations, n_individuals), dtype=int)
+
+    # evolve the population over time
+    for i in range(n_generations):
+
+        # select the parents for each individual
+        parents = np.zeros((n_individuals, 2), dtype=int)
+        for j in range(n_individuals):
+            neighbors = np.roll(population, -j)[1:5]
+            fitness = f(neighbors)
+            prob = dispersion(fitness, std)
+            prob /= prob.sum()
+            parents[j] = np.random.choice(np.arange(4)+1, size=2, p=prob, replace=False)
+
+        # create the offspring for each individual
+        offspring = np.zeros_like(population)
+        for j in range(n_individuals):
+            p1, p2 = parents[j]
+            avg = 0.5 * (population[p1] + population[p2])
+            offspring[j] = avg +- np.random.uniform(-(avg), +(avg))
+
+        # clip the values to stay within the range 1-10
+        offspring = np.clip(offspring, 1, 10)
+
+        # update the population with the offspring
+        population = offspring
+
+        # store the values for this generation
+        if binary_range:
+            population_matrix[i] = np.where(population <= threshold, 0, 1)
+        else:
+            population_matrix[i] = np.where(population <= threshold, 0, np.where(population <= 5, 1, binary_range))
+
+    # plot the population matrix
+    plt.imshow(population_matrix, cmap='gray', aspect='auto')
+    plt.xlabel('Individual')
+    plt.ylabel('Generation')
+    plt.show()
+
+    return population_matrix
+
+# call the function to create and display the population matrix
+create_population_matrix(10000, 9, 0.5, 5, 1)
+
+def add_random_chances(matrix, range1=(5, 5), range2=(5, 5), prob1=0.5, prob2=0.5):
+    """Adds random chances of either 0 or 1 to elements in the specified ranges."""
+    r1_mask = (matrix > range1[0]) & (matrix < range1[1])
+    r2_mask = (matrix > range2[0]) & (matrix < range2[1])
+    matrix[r1_mask] = np.random.choice([0, 1], size=r1_mask.sum(), p=[1-prob1, prob1])
+    matrix[r2_mask] = np.random.choice([0, 1], size=r2_mask.sum(), p=[1-prob2, prob2])
+    return matrix
+
